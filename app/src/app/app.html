@@ -1,0 +1,13 @@
+<div class="app-layout">
+  @if (auth.isAuthenticated()) {
+    <app-sidebar />
+  }
+  <div class="app-main-wrapper">
+    @if (auth.isAuthenticated()) {
+      <app-header />
+    }
+    <main class="main-content" [class.full-width]="!auth.isAuthenticated()">
+      <router-outlet />
+    </main>
+  </div>
+</div>
