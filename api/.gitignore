@@ -1,0 +1,30 @@
+# ==============================================================================
+# Backend (.gitignore) — Symfony / PHP
+# ==============================================================================
+
+# Environment files & Secrets
+.env
+.env.*
+!.env.example
+.env.local
+.env.local.php
+.env.*.local
+.env.development
+.env.test
+.env.staging
+.env.production
+
+# JWT Keys & Cryptographic materials
+/config/jwt/
+/config/jwt/*.pem
+/config/jwt/*.key
+/config/secrets/prod/prod.decrypt.private.php
+
+# Symfony cache & logs
+/var/
+/public/bundles/
+/vendor/
+
+# Tests
+/phpunit.xml
+/.phpunit.cache/
