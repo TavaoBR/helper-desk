@@ -1,0 +1,81 @@
+# ==============================================================================
+# SupportFlow — Global Git Ignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Secret Files (STRICTLY FORBIDDEN IN REPOSITORY)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env
+.env.local
+.env.local.php
+.env.*.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.staging
+.env.staging.local
+.env.production
+.env.production.local
+
+# ------------------------------------------------------------------------------
+# 2. Cryptographic Keys, Certificates & Credentials
+# ------------------------------------------------------------------------------
+*.pem
+*.key
+*.pub
+*.crt
+*.cer
+*.pfx
+*.p12
+config/jwt/
+**/config/jwt/*.pem
+**/config/jwt/*.key
+**/config/secrets/*
+!**/config/secrets/prod/prod.decrypt.private.php.example
+
+# ------------------------------------------------------------------------------
+# 3. Backend (Symfony / PHP)
+# ------------------------------------------------------------------------------
+/api/vendor/
+/api/var/
+/api/public/bundles/
+/api/.phpunit.cache/
+/api/phpunit.xml
+
+# ------------------------------------------------------------------------------
+# 4. Frontend (Angular / Node.js)
+# ------------------------------------------------------------------------------
+/app/node_modules/
+/app/dist/
+/app/tmp/
+/app/out-tsc/
+/app/.angular/
+/app/.sass-cache/
+/app/connect.lock
+/app/coverage/
+
+# ------------------------------------------------------------------------------
+# 5. IDEs, Editors & Operating System
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+*~
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
