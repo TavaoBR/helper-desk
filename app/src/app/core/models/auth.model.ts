@@ -18,9 +18,27 @@ export interface User {
 export interface LoginRequest {
   email: string;
   password: string;
+  deviceIdentifier?: string;
 }
 
 export interface LoginResponse {
-  token: string;
   user: User;
+  token?: string;
+  sessionId?: string;
+  expiresAt?: string;
+}
+
+export interface UserResponse {
+  user: User;
+}
+
+export interface ActiveSession {
+  id: string;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  deviceIdentifier: string | null;
+  isCurrent: boolean;
 }
