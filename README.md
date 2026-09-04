@@ -245,8 +245,8 @@ APP_SECRET=a8f9c1e7b3424d6298fa7c9012345678
 DEFAULT_URI=http://localhost:8000
 CORS_ALLOW_ORIGIN='^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$'
 
-# Conexão Mysql local
-DATABASE_URL="mysql:///%kernel.project_dir%/var/data.db"
+# Conexão Sqlite local
+DATABASE_URL="sqlite:///%kernel.project_dir%/var/data.db"
 
 # Configuração de Segurança e Sessão
 JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
