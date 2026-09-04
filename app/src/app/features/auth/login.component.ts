@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -122,6 +122,17 @@ import { AuthService } from '../../core/services/auth.service';
             <h2>Bem-vindo de volta! 👋</h2>
             <p>Acesse sua conta para continuar.</p>
           </div>
+
+          <!-- Alerta de sessão expirada -->
+          @if (expiredMessage()) {
+            <div class="alert alert-warning" role="alert" id="session-expired-alert">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M8 5v3M8 11h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              {{ expiredMessage() }}
+            </div>
+          }
 
           <!-- Alerta de erro -->
           @if (errorMessage()) {
@@ -642,6 +653,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -651,12 +663,27 @@ export class LoginComponent {
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly showPassword = signal(false);
+  readonly expiredMessage = signal<string | null>(null);
+
+  constructor() {
+    const isExpired =
+      this.auth.isSessionExpired() ||
+      this.route.snapshot?.queryParamMap?.get('expired') === '1';
+
+    if (isExpired) {
+      this.expiredMessage.set(
+        this.auth.sessionExpiredMessage() ||
+          'Sua sessão expirou. Faça login novamente para continuar.'
+      );
+    }
+  }
 
   onSubmit(): void {
     if (this.form.invalid) return;
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
+    this.expiredMessage.set(null);
 
     const credentials = this.form.getRawValue() as { email: string; password: string };
 
