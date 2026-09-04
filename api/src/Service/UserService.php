@@ -15,7 +15,8 @@ class UserService
 {
     public function __construct(
         private readonly UserRepository $userRepository,
-        private readonly UserPasswordHasherInterface $hasher
+        private readonly UserPasswordHasherInterface $hasher,
+        private readonly ?SessionService $sessionService = null
     ) {
     }
 
@@ -59,5 +60,32 @@ class UserService
         }
 
         return UserResponseDTO::fromEntity($user);
+    }
+
+    public function changePassword(User $user, string $newPassword): void
+    {
+        if (strlen($newPassword) < 6) {
+            throw new \App\Exception\ValidationException('A nova senha deve possuir no mínimo 6 caracteres.', [
+                'password' => 'A senha deve possuir no mínimo 6 caracteres.'
+            ]);
+        }
+
+        $hashedPassword = $this->hasher->hashPassword($user, $newPassword);
+        $user->setPassword($hashedPassword);
+        $this->userRepository->save($user);
+
+        // Security rule: Changing password must invalidate all active user sessions
+        $this->sessionService?->revokeAllForUser($user);
+    }
+
+    public function setUserActiveStatus(User $user, bool $isActive): void
+    {
+        $user->setIsActive($isActive);
+        $this->userRepository->save($user);
+
+        // Security rule: If user is blocked or deactivated, revoke all active sessions immediately
+        if (!$isActive) {
+            $this->sessionService?->revokeAllForUser($user);
+        }
     }
 }
