@@ -2,31 +2,6 @@
 
 <div align="center">
 
-![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)
-![Symfony](https://img.shields.io/badge/Symfony-7.4-000000?style=for-the-badge&logo=symfony&logoColor=white)
-![Angular](https://img.shields.io/badge/Angular-21.2-DD0031?style=for-the-badge&logo=angular&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Doctrine](https://img.shields.io/badge/Doctrine-ORM%203.6-FC6A38?style=for-the-badge&logo=doctrine&logoColor=white)
-![PHPUnit](https://img.shields.io/badge/PHPUnit-50%20Tests%20Passed-3775A9?style=for-the-badge&logo=php&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-224%20Tests%20Passed-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
-
-<p align="center">
-  <strong>Plataforma moderna, escalável e multi-tenant para centralização de atendimento corporativo, gestão de tickets, pipelines dinâmicos e controle rigoroso de SLA.</strong>
-</p>
-
-[Visão Geral](#-visão-geral) •
-[Diferenciais Técnicos](#-diferenciais-técnicos) •
-[Arquitetura](#-arquitetura-do-sistema) •
-[Pré-requisitos](#-pré-requisitos) •
-[Como Rodar](#-como-executar-o-projeto-passo-a-passo) •
-[Variáveis de Ambiente](#-variáveis-de-ambiente-copiar-e-colar) •
-[Credenciais Demo](#-credenciais-de-acesso-demo-seed) •
-[Testes](#-executando-os-testes) •
-[Estrutura](#-estrutura-do-projeto) •
-[Documentação](#-documentação-técnica-adicional)
-
-</div>
-
 ---
 
 ## 📌 Visão Geral
@@ -40,18 +15,22 @@ Projetado com arquitetura limpa, separação de responsabilidades e foco em alta
 ## ✨ Diferenciais Técnicos
 
 ### 🏢 Multi-Tenancy Nativo
+
 - Isolamento estrito de dados por organização (`Tenant`) em nível de banco de dados e repositório.
 - Nenhuma consulta ou operação vaza dados entre clientes ou empresas diferentes.
 
 ### 🔄 Pipelines Dinâmicos & Máquina de Estados
+
 - Cada departamento possui seus próprios tipos de chamado, categorias e estágios de pipeline (ex: *Aberto* $\to$ *Em Triagem* $\to$ *Em Atendimento* $\to$ *Aguardando Solicitante* $\to$ *Resolvido* $\to$ *Fechado*).
 - Validação estrita de transições autorizadas com histórico imutável de movimentação e comentários.
 
 ### ⏱️ Motor de SLA com Alvos Dinâmicos
+
 - Regras de prazo para **Primeira Resposta** e **Resolução** calculadas automaticamente com base no departamento, tipo de chamado e prioridade (Baixa, Média, Alta, Crítica).
 - Rastreamento em tempo real de conformidade e violação de SLA.
 
 ### 🛡️ Segurança de Nível Bancário & Gestão Ativa de Sessões
+
 - **Autenticação Híbrida JWT + Cookies HttpOnly**: Os tokens de acesso e de atualização trafegam através de cookies com flags `HttpOnly`, `SameSite=Lax` e `Secure`, tornando a aplicação imune ao roubo de tokens via vulnerabilidades de XSS (Cross-Site Scripting).
 - **Proteção CSRF (Double-Submit Cookie)**: Listener centralizado (`CsrfValidationListener`) valida requisições mutantes (`POST`, `PUT`, `PATCH`, `DELETE`) contra cabeçalhos `X-XSRF-TOKEN`.
 - **Rastreamento Ativo de Dispositivos (`UserSession`)**: Cada login gera um registro persistente com identificador único, IP, User-Agent e data de expiração, permitindo ao usuário consultar sessões ativas e revogar acessos remotamente.
@@ -59,6 +38,7 @@ Projetado com arquitetura limpa, separação de responsabilidades e foco em alta
 - **Auto-Refresh Transparente no Frontend**: Interceptor Angular inteligente intercepta erros `401 Unauthorized`, efetua o refresh do token em segundo plano, enfileira requisições concorrentes sem quebrar chamadas em andamento e redireciona com mensagem amigável caso a sessão expire definitivamente.
 
 ### ⚡ Frontend Moderno (Angular 21 + Signals)
+
 - Desenvolvido com **Angular 21** utilizando componentes *Standalone*, injeção de dependência funcional (`inject()`) e reatividade com **Angular Signals** (`signal`, `computed`).
 - **Design System próprio em Vanilla CSS**: Interface refinada, leve, rápida e moderna (harmoniosa, responsiva, com suporte a microinterações e skeleton loading), sem dependência de frameworks CSS externos pesados.
 
@@ -92,7 +72,7 @@ flowchart TB
         Services[Domain & Business Services]
         Repos[Entity Repositories]
         ORM[Doctrine ORM 3.6]
-        
+      
         Router --> Csrf
         Csrf --> Controllers
         Controllers --> DTOs
@@ -145,14 +125,14 @@ sequenceDiagram
 
 Para executar o projeto localmente, certifique-se de ter instalado em seu ambiente:
 
-| Ferramenta | Versão Mínima | Descrição |
-| :--- | :--- | :--- |
-| **PHP** | `8.2` ou superior | Com as extensões: `pdo_mysql`, `pdo_sqlite`, `openssl`, `mbstring`, `ctype`, `iconv`, `curl` |
-| **Composer** | `2.2` ou superior | Gerenciador de dependências PHP |
-| **Node.js** | `20.x` LTS ou superior | Ambiente de execução JavaScript |
-| **npm** | `10.x` ou superior | Gerenciador de pacotes Node |
-| **Banco de Dados** | `MySQL 8.0+`, `PostgreSQL 14+` ou `SQLite 3` | *Dica: SQLite funciona imediatamente sem instalar nenhum servidor de banco!* |
-| **Symfony CLI** *(Opcional)* | Mais recente | Utilitário para iniciar o servidor de desenvolvimento da API |
+| Ferramenta                           | Versão Mínima                                    | Descrição                                                                                                |
+| :----------------------------------- | :------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| **PHP**                        | `8.2` ou superior                                | Com as extensões:`pdo_mysql`, `pdo_sqlite`, `openssl`, `mbstring`, `ctype`, `iconv`, `curl` |
+| **Composer**                   | `2.2` ou superior                                | Gerenciador de dependências PHP                                                                           |
+| **Node.js**                    | `20.x` LTS ou superior                           | Ambiente de execução JavaScript                                                                          |
+| **npm**                        | `10.x` ou superior                               | Gerenciador de pacotes Node                                                                                |
+| **Banco de Dados**             | `MySQL 8.0+`, `PostgreSQL 14+` ou `SQLite 3` | *Dica: SQLite funciona imediatamente sem instalar nenhum servidor de banco!*                             |
+| **Symfony CLI** *(Opcional)* | Mais recente                                       | Utilitário para iniciar o servidor de desenvolvimento da API                                              |
 
 ---
 
@@ -170,16 +150,19 @@ cd helper-desk
 ### 2. Configurar e Iniciar o Backend (API)
 
 Entre na pasta da API:
+
 ```bash
 cd api
 ```
 
 Instale as dependências do Symfony via Composer:
+
 ```bash
 composer install
 ```
 
 Crie o arquivo de configuração local `.env.local` copiando o modelo de ambiente:
+
 ```bash
 cp .env.example .env.local
 ```
@@ -187,23 +170,28 @@ cp .env.example .env.local
 > [!TIP]
 > **Execução Ultra-Rápida com SQLite (Zero Configuração de Banco)**:
 > Se você não quiser configurar um servidor MySQL ou Docker agora, basta definir no `.env.local`:
+>
 > ```env
 > DATABASE_URL="sqlite:///%kernel.project_dir%/var/data.db"
 > ```
+>
 > O banco será criado automaticamente em um arquivo local!
 
 Crie o banco de dados e execute as migrations:
+
 ```bash
 php bin/console doctrine:database:create --if-not-exists
 php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
 Popule o banco com a massa de dados inicial (tenants, usuários, departamentos, pipelines e SLAs):
+
 ```bash
 php bin/console app:seed
 ```
 
 Inicie o servidor de desenvolvimento da API (Porta `8000`):
+
 ```bash
 # Opção A: Utilizando o Symfony CLI (Recomendado)
 symfony server:start --port=8000
@@ -212,7 +200,7 @@ symfony server:start --port=8000
 php -S 127.0.0.1:8000 -t public
 ```
 
-A API estará respondendo em: **`http://localhost:8000/api`**  
+A API estará respondendo em: **`http://localhost:8000/api`**
 *(Healthcheck público disponível em: `http://localhost:8000/api/health`)*
 
 ---
@@ -220,16 +208,19 @@ A API estará respondendo em: **`http://localhost:8000/api`**
 ### 3. Configurar e Iniciar o Frontend (Aplicação Angular)
 
 Abra outro terminal e acesse o diretório do frontend:
+
 ```bash
 cd app
 ```
 
 Instale as dependências Node.js:
+
 ```bash
 npm install
 ```
 
 Inicie o servidor de desenvolvimento do Angular:
+
 ```bash
 npm start
 ```
@@ -244,7 +235,9 @@ Abra o seu navegador e acesse:
 Para configurar o arquivo `api/.env.local`, escolha uma das opções abaixo e cole o conteúdo no arquivo:
 
 ### Opção 1: SQLite (Recomendado para Testes e Demonstração Imediata)
+
 Não requer nenhum serviço externo rodando.
+
 ```env
 # api/.env.local
 APP_ENV=dev
@@ -252,8 +245,8 @@ APP_SECRET=a8f9c1e7b3424d6298fa7c9012345678
 DEFAULT_URI=http://localhost:8000
 CORS_ALLOW_ORIGIN='^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$'
 
-# Conexão SQLite local
-DATABASE_URL="sqlite:///%kernel.project_dir%/var/data.db"
+# Conexão Mysql local
+DATABASE_URL="mysql:///%kernel.project_dir%/var/data.db"
 
 # Configuração de Segurança e Sessão
 JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
@@ -267,6 +260,7 @@ COOKIE_SAMESITE=lax
 ```
 
 ### Opção 2: MySQL Local
+
 ```env
 # api/.env.local
 APP_ENV=dev
@@ -289,7 +283,9 @@ COOKIE_SAMESITE=lax
 ```
 
 ### Chaves Criptográficas JWT
+
 As chaves públicas e privadas necessárias para assinatura dos tokens já vêm provisionadas em `api/config/jwt/`. Caso queira gerar novos pares de chaves em seu ambiente:
+
 ```bash
 cd api
 php bin/console lexik:jwt:generate-keypair --skip-if-exists
@@ -301,11 +297,11 @@ php bin/console lexik:jwt:generate-keypair --skip-if-exists
 
 O comando `php bin/console app:seed` cria automaticamente a organização modelo **Acme Corporation** com usuários para cada perfil do sistema:
 
-| Perfil / Papel | E-mail | Senha | Capacidades & Acessos |
-| :--- | :--- | :--- | :--- |
-| **Administrador** | `admin@supportflow.local` | `secret123` | Acesso completo: Gestão de usuários, catálogo de serviços, políticas de SLA, pipelines, relatórios e métricas gerais. |
-| **Atendente (Agente)** | `atendente@supportflow.local` | `secret123` | Painel operacional: Triagem, assunção de chamados, movimentação de tickets no pipeline, comentários e histórico. |
-| **Solicitante (Usuário)** | `joao@supportflow.local` | `secret123` | Portal do colaborador: Abertura simplificada de tickets por departamento/categoria e acompanhamento do status. |
+| Perfil / Papel                   | E-mail                          | Senha         | Capacidades & Acessos                                                                                                        |
+| :------------------------------- | :------------------------------ | :------------ | :--------------------------------------------------------------------------------------------------------------------------- |
+| **Administrador**          | `admin@supportflow.local`     | `secret123` | Acesso completo: Gestão de usuários, catálogo de serviços, políticas de SLA, pipelines, relatórios e métricas gerais. |
+| **Atendente (Agente)**     | `atendente@supportflow.local` | `secret123` | Painel operacional: Triagem, assunção de chamados, movimentação de tickets no pipeline, comentários e histórico.       |
+| **Solicitante (Usuário)** | `joao@supportflow.local`      | `secret123` | Portal do colaborador: Abertura simplificada de tickets por departamento/categoria e acompanhamento do status.               |
 
 ---
 
@@ -314,19 +310,25 @@ O comando `php bin/console app:seed` cria automaticamente a organização modelo
 O projeto conta com **cobertura abrangente de testes automatizados**, garantindo a estabilidade tanto das regras de negócio do backend quanto dos fluxos visuais e reativos do frontend.
 
 ### Testes da API (PHPUnit)
+
 Cobre serviços de domínio, validações de integridade, gestão de sessões, segurança e controllers de autenticação:
+
 ```bash
 cd api
 php vendor/bin/phpunit
 ```
+
 > **Resultado**: `OK (50 tests, 226 assertions)` ✅
 
 ### Testes do Frontend (Vitest)
+
 Cobre componentes, interceptors com refresh concorrente, guards de rota, pipes e serviços de estado:
+
 ```bash
 cd app
 npm test -- --watch=false
 ```
+
 > **Resultado**: `13 passed (13 test files), 224 passed (224 tests)` ✅
 
 ---
