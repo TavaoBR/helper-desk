@@ -2,12 +2,14 @@
  * AuthService — Unit Tests
  *
  * Covers:
- *  - state initialization from localStorage
+ *  - state initialization (in-memory signals)
+ *  - ensures NO tokens are stored in localStorage or sessionStorage (Requirement 6)
  *  - login (success, 401, 500)
- *  - logout side-effects
+ *  - refreshSession (updates signals)
+ *  - logout and logoutAll (clears signals and notifies backend)
+ *  - handleSessionExpired (clears state, sets friendly alert, navigates to /login)
  *  - hasPermission per role
- *  - setSession / token signal
- *  - loadStoredUser with invalid JSON
+ *  - initSession & getMe
  */
 
 import { TestBed } from '@angular/core/testing';
@@ -16,19 +18,18 @@ import {
   provideHttpClientTesting
 } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { makeAdminUser, makeAgentUser, makeUser, DummyComponent } from '../../../testing/factories';
-
-const TOKEN_KEY = 'supportflow_token';
-const USER_KEY  = 'supportflow_user';
 
 describe('AuthService', () => {
   let service: AuthService;
   let http: HttpTestingController;
+  let router: Router;
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -38,86 +39,61 @@ describe('AuthService', () => {
     });
     service = TestBed.inject(AuthService);
     http    = TestBed.inject(HttpTestingController);
+    router  = TestBed.inject(Router);
   });
 
   afterEach(() => {
     http.verify();
     localStorage.clear();
+    sessionStorage.clear();
   });
 
-  // ── Initialization ──────────────────────────────────────────────────────────
+  // ── Initialization & Security (Requirement 6) ───────────────────────────────
 
-  it('should initialize with null user and token when localStorage is empty', () => {
+  it('should initialize with null user and token in memory', () => {
     expect(service.currentUser()).toBeNull();
     expect(service.token()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
+    expect(service.isSessionExpired()).toBe(false);
   });
 
-  it('should restore user and token from localStorage on initialization', () => {
-    // Arrange — pre-populate storage before service is created
-    const user  = makeUser();
-    const token = 'stored-jwt-token';
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  it('must NEVER store access token or refresh token in localStorage or sessionStorage', () => {
+    const user = makeUser();
+    const token = 'super-secret-jwt-token';
 
-    // Re-create service after storage is populated
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([])
-      ]
-    });
-    const freshService = TestBed.inject(AuthService);
-    const freshHttp    = TestBed.inject(HttpTestingController);
+    service.setSession(token, user);
 
-    expect(freshService.currentUser()?.id).toBe(user.id);
-    expect(freshService.token()).toBe(token);
-    expect(freshService.isAuthenticated()).toBe(true);
-
-    freshHttp.verify();
+    expect(localStorage.getItem('supportflow_token')).toBeNull();
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(sessionStorage.getItem('supportflow_token')).toBeNull();
+    expect(sessionStorage.getItem('token')).toBeNull();
   });
 
-  it('should handle corrupted JSON in localStorage gracefully', () => {
-    localStorage.setItem(USER_KEY, 'INVALID_JSON{{{{');
-    localStorage.setItem(TOKEN_KEY, 'some-token');
+  // ── Login — happy path & error handling ────────────────────────────────────
 
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([])
-      ]
-    });
-    const freshService = TestBed.inject(AuthService);
-    TestBed.inject(HttpTestingController).verify();
-
-    // user is null but token is still present (corrupted user ≠ bad token)
-    expect(freshService.currentUser()).toBeNull();
-  });
-
-  // ── Login — happy path ──────────────────────────────────────────────────────
-
-  it('should set session and update signals after successful login', () => {
-    const user     = makeUser();
-    const token    = 'jwt.token.here';
-    const response = { token, user };
+  it('should update signals after successful login and never write tokens to web storage', () => {
+    const user = makeUser();
+    const token = 'jwt.token.here';
+    const response = { user, token, sessionId: 'session-uuid', expiresAt: '2026-09-11T00:00:00Z' };
 
     let resolved = false;
     service.login({ email: user.email, password: 'password' }).subscribe(() => {
       resolved = true;
     });
 
-    http.expectOne('http://localhost:8000/api/auth/login').flush(response);
+    const req = http.expectOne('http://localhost:8000/api/auth/login');
+    expect(req.request.method).toBe('POST');
+    req.flush(response);
 
     expect(resolved).toBe(true);
     expect(service.currentUser()?.id).toBe(user.id);
     expect(service.token()).toBe(token);
     expect(service.isAuthenticated()).toBe(true);
-    expect(localStorage.getItem(TOKEN_KEY)).toBe(token);
-    expect(JSON.parse(localStorage.getItem(USER_KEY)!).id).toBe(user.id);
+    expect(service.isSessionExpired()).toBe(false);
+
+    // Verify localStorage remains clean
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
   });
 
   it('should propagate 401 error on invalid credentials', () => {
@@ -127,7 +103,7 @@ describe('AuthService', () => {
     });
 
     http.expectOne('http://localhost:8000/api/auth/login').flush(
-      { error: { code: 'AUTH_FAILED', message: 'Credenciais inválidas' } },
+      { error: { code: 'UNAUTHORIZED', message: 'Credenciais inválidas.' } },
       { status: 401, statusText: 'Unauthorized' }
     );
 
@@ -151,32 +127,75 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  // ── Refresh Session ────────────────────────────────────────────────────────
+
+  it('should call /auth/refresh and update currentUser signal', () => {
+    const user = makeUser({ name: 'Renovado' });
+    let resolved = false;
+
+    service.refreshSession().subscribe((res) => {
+      resolved = true;
+      expect(res.user.name).toBe('Renovado');
+    });
+
+    const req = http.expectOne('http://localhost:8000/api/auth/refresh');
+    expect(req.request.method).toBe('POST');
+    req.flush({ user, sessionId: 's-123' });
+
+    expect(resolved).toBe(true);
+    expect(service.currentUser()?.name).toBe('Renovado');
+    expect(service.isAuthenticated()).toBe(true);
+  });
+
   // ── Logout ──────────────────────────────────────────────────────────────────
 
-  it('should clear storage and signals on logout', () => {
+  it('should immediately clear state and signals, call backend logout and redirect', () => {
     const user = makeUser();
-    service.setSession('my-token', user);
+    service.setSession('token', user);
     expect(service.isAuthenticated()).toBe(true);
 
-    service.logout();
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    service.logout().subscribe();
 
     expect(service.currentUser()).toBeNull();
     expect(service.token()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
-    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
-    expect(localStorage.getItem(USER_KEY)).toBeNull();
+    expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+
+    const req = http.expectOne('http://localhost:8000/api/auth/logout');
+    expect(req.request.method).toBe('POST');
+    req.flush({ message: 'Logout realizado com sucesso.' });
   });
 
-  // ── setSession ──────────────────────────────────────────────────────────────
+  it('should immediately clear state on logoutAll and call backend logout-all', () => {
+    service.setSession('token', makeUser());
+    expect(service.isAuthenticated()).toBe(true);
 
-  it('should persist session data to localStorage via setSession', () => {
-    const user  = makeAdminUser();
-    const token = 'admin-jwt';
-    service.setSession(token, user);
+    service.logoutAll().subscribe();
 
-    expect(service.token()).toBe(token);
-    expect(service.currentUser()?.roles).toContain('ROLE_ADMIN');
-    expect(localStorage.getItem(TOKEN_KEY)).toBe(token);
+    expect(service.currentUser()).toBeNull();
+    expect(service.isAuthenticated()).toBe(false);
+
+    const req = http.expectOne('http://localhost:8000/api/auth/logout-all');
+    expect(req.request.method).toBe('POST');
+    req.flush({ message: 'Todas as sessões encerradas.' });
+  });
+
+  // ── Session Expired (Requirement 8) ────────────────────────────────────────
+
+  it('should handle session expired by clearing state, setting message and redirecting', () => {
+    service.setSession('token', makeUser());
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    service.handleSessionExpired('Sua sessão expirou. Faça login novamente para continuar.');
+
+    expect(service.currentUser()).toBeNull();
+    expect(service.token()).toBeNull();
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.isSessionExpired()).toBe(true);
+    expect(service.sessionExpiredMessage()).toBe('Sua sessão expirou. Faça login novamente para continuar.');
+    expect(navigateSpy).toHaveBeenCalledWith(['/login'], { queryParams: { expired: '1' } });
   });
 
   // ── hasPermission ───────────────────────────────────────────────────────────
@@ -207,6 +226,40 @@ describe('AuthService', () => {
     service.setSession('token', makeUser());
     expect(service.isAuthenticated()).toBe(true);
     service.logout();
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // ── initSession ─────────────────────────────────────────────────────────────
+
+  it('should restore session from /auth/me when valid cookie is present', () => {
+    const user = makeUser({ name: 'Cookie Restored' });
+    let resultUser: any = null;
+
+    service.initSession().subscribe((u) => {
+      resultUser = u;
+    });
+
+    http.expectOne('http://localhost:8000/api/auth/me').flush({ user });
+
+    expect(resultUser?.name).toBe('Cookie Restored');
+    expect(service.currentUser()?.name).toBe('Cookie Restored');
+    expect(service.isAuthenticated()).toBe(true);
+  });
+
+  it('should handle unauthenticated session on initSession gracefully returning null', () => {
+    let resultUser: any = undefined;
+
+    service.initSession().subscribe((u) => {
+      resultUser = u;
+    });
+
+    http.expectOne('http://localhost:8000/api/auth/me').flush(
+      'Unauthorized',
+      { status: 401, statusText: 'Unauthorized' }
+    );
+
+    expect(resultUser).toBeNull();
+    expect(service.currentUser()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
   });
 });

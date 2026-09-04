@@ -5,6 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { App } from './app';
 import { makeAdminUser, DummyComponent } from '../testing/factories';
 import { TicketService } from './core/services/ticket.service';
+import { AuthService } from './core/services/auth.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -41,8 +42,8 @@ describe('App', () => {
 
   it('should render brand name in sidebar when authenticated', async () => {
     const admin = makeAdminUser();
-    localStorage.setItem('supportflow_token', 'mock-token');
-    localStorage.setItem('supportflow_user', JSON.stringify(admin));
+    const authService = TestBed.inject(AuthService);
+    authService.setSession('mock-token', admin);
 
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

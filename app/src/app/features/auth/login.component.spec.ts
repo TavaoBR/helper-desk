@@ -331,4 +331,18 @@ describe('LoginComponent', () => {
     requests[0].flush({ token: 't', user: makeUser() });
     await fixture.whenStable();
   });
+
+  // ── Session Expired Alert (Requirement 8) ─────────────────────────────────
+
+  it('should display friendly alert when session is expired', () => {
+    authService.handleSessionExpired('Sua sessão expirou. Faça login novamente para continuar.');
+
+    const freshFixture = TestBed.createComponent(LoginComponent);
+    freshFixture.detectChanges();
+    const el = freshFixture.nativeElement as HTMLElement;
+
+    const alert = el.querySelector('#session-expired-alert');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toContain('Sua sessão expirou. Faça login novamente para continuar.');
+  });
 });
